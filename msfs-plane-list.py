@@ -5,6 +5,11 @@ import openpyxl as op
 import os
 import sys
 
+# Release 1.2
+
+LOG_FILE = 'aircrafts.log'
+BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode']
+
 # Tries to determine the folders for the Steam and the Store version of MSFS.
 # For each match, the name of the installation and the location of the
 # packages folder is add to an array
@@ -36,43 +41,67 @@ def find_aircrafts(package_path: str):
 
 # Reads the content of an aircraft.cfg file.
 # Returns a dictionary of found data.
-def read_aircraft_cfg(file_name):
+def read_aircraft_cfg(file_name, logfile):
     KEY_1 = 'GENERAL'
     VALUES_1 = ['icao_manufacturer', 'icao_type_designator', 'icao_model']
     KEY_2 = 'FLTSIM.0'
     VALUES_2 = ['ui_certified_ceiling', 'ui_max_range', 'ui_autonomy']
 
-    aircraft_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'))
-    aircraft_cfg.read(file_name)
     data = {}
-    data.update({key:aircraft_cfg[KEY_1][key].replace('"', '') for key in VALUES_1})
-    data.update({key:float(aircraft_cfg[KEY_2][key]) for key in VALUES_2})
+    try:
+        aircraft_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'))
+        aircraft_cfg.read(file_name)
+    except:
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading {file_name}\n')
+    else:
+        data.update({key:aircraft_cfg[KEY_1][key].replace('"', '') for key in VALUES_1})
+        data.update({key:float(aircraft_cfg[KEY_2][key]) for key in VALUES_2})
     return data
     
 # Reads the content of a flight_model.cfg file.
 # Returns a dictionary of found data.
-def read_flight_model_cfg(file_name):
+def read_flight_model_cfg(file_name, logfile):
     KEY_3 = 'REFERENCE SPEEDS'
     VALUES_3 = ['cruise_speed']
 
-    flight_model_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'), comment_prefixes=('#',';','/'))
-    flight_model_cfg.read(file_name)
     data = {}
-    data.update({key:float(flight_model_cfg[KEY_3][key]) for key in VALUES_3})
+    try:
+        flight_model_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'), comment_prefixes=('#',';','/'))
+        flight_model_cfg.read(file_name)
+    except:
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading {file_name}\n')
+    else:
+        data.update({key:float(flight_model_cfg[KEY_3][key]) for key in VALUES_3})
+
     return data
+
+# Test if an aircraft is in the list of not-to-check
+# airplanes. These are some dev-mode planes and the
+# C172 TowBar.
+def aircraft_in_blacklist(aircraft):
+    for bl in BLACKLIST:
+        if bl in aircraft[0]:
+            return True
+    return False
 
 # Imports the data for a list of aircrafts. 
 # Returns a list of dictionaries containing the data
-def read_aircrafts_data(aircrafts):
+def read_aircrafts_data(aircrafts, logfile):
     aircrafts_data = []
     for aircraft in aircrafts:
+        if aircraft_in_blacklist(aircraft):
+            continue
         try:
             data_row = {}
-            data_row.update(read_aircraft_cfg(aircraft[1]))
-            data_row.update(read_flight_model_cfg(aircraft[2]))
-            aircrafts_data.append(data_row)
-        except KeyError:
-            pass
+            data_row.update(read_aircraft_cfg(aircraft[1], logfile))
+            data_row.update(read_flight_model_cfg(aircraft[2], logfile))
+            if len(data_row) == 7:
+                aircrafts_data.append(data_row)
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Added {aircraft[0]}\n')
+            else:
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Skipping {aircraft[0]}\n')
+        except KeyError as ke:
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error with key {ke} in {aircraft[0]}\n')
     print(f'Found {len(aircrafts_data)} aircrafts')
     return aircrafts_data
 
@@ -109,24 +138,23 @@ def export_to_csv(package_name, aircrafts_data: dict):
 
 # Main program
 if __name__ == '__main__':
-    log_file = 'aircrafts.log'
-    packages = get_packages_folders()
+    
+    with open(LOG_FILE, '+a') as logfile:
+        logfile.write(f'------------------------------------------------------------\n')
+        packages = get_packages_folders()
 
-    if len(packages) == 0:
-        f = open(log_file, '+a')
-        f.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Could not find any package folders\n')
-        f.close()
-        sys.exit(1)
+        if len(packages) == 0:
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Could not find any package folders\n')
+            sys.exit(1)
 
-    for package in packages:
-        with open(log_file, '+a') as f:
-            f.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Scanning "{package[1]}" for aircrafts\n')
+        for package in packages:
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Scanning {packages[0]} "{package[1]}" for aircrafts\n')
             aircrafts = find_aircrafts(package[1])
-            aircrafts_data = read_aircrafts_data(aircrafts)
-            f.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Found {len(aircrafts_data)} aircrafts\n')
+            aircrafts_data = read_aircrafts_data(aircrafts, logfile)
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Found {len(aircrafts_data)} aircrafts\n')
 
             export_to_excel(package[0], aircrafts_data)
-            f.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.xlsx"\n')
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.xlsx"\n')
 
             export_to_csv(package[0], aircrafts_data)
-            f.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.csv"\n')
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.csv"\n')
