@@ -1,12 +1,10 @@
 from datetime import datetime
 import configparser
-import csv
 import openpyxl as op
 import os
 import sys
 
-# Release 1.2
-
+VERSION = "1.2.1"
 LOG_FILE = 'aircrafts.log'
 BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode']
 
@@ -27,15 +25,20 @@ def get_packages_folders():
 
 # Iterates over a packages folder and determines all aircrafts.
 # Returns the path for the aircraft.cfg and the flight_model.cfg files.
-def find_aircrafts(package_path: str):
+def find_aircrafts(package_path: str, logfile):
+    logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Scanning {packages[0]} "{package[1]}" for aircrafts\n')
     aircraft_cfg_name = 'aircraft.cfg'
     flight_model_cfg_name = 'flight_model.cfg'
 
     aircrafts = []
-    for path, _, files in os.walk(package_path):
-        for name in files:
-            if name.endswith(flight_model_cfg_name):
-                aircrafts.append((path, os.path.join(path, aircraft_cfg_name), os.path.join(path, flight_model_cfg_name)))
+    try:
+        for path, _, files in os.walk(package_path):
+            for name in files:
+                if name.endswith(flight_model_cfg_name):
+                    aircrafts.append((path, os.path.join(path, aircraft_cfg_name), os.path.join(path, flight_model_cfg_name)))
+    except:
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error in find_aircrafts("{package_path}")\n')
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Folder "{path}"\n')
 
     return aircrafts
 
@@ -103,6 +106,7 @@ def read_aircrafts_data(aircrafts, logfile):
         except KeyError as ke:
             logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error with key {ke} in {aircraft[0]}\n')
     print(f'Found {len(aircrafts_data)} aircrafts')
+    logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Found {len(aircrafts_data)} aircrafts\n')
     return aircrafts_data
 
 HEADERS = ['Manufacturer', 'Type', 'Model', 'Ceiling [ft]', 'Range [nm]', 'Duration [h]', 'Cruise speed [kt]']
@@ -131,16 +135,16 @@ def export_to_excel(package_name, aircrafts_data):
 # Exports aircraft data to an excel file.
 def export_to_csv(package_name, aircrafts_data: dict):
     with open(f'aircrafts-{package_name}.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(HEADERS)
+        csvfile.write(','.join([h for h in HEADERS]) + '\n')
         for data_row in aircrafts_data:
-            writer.writerow([v for v in data_row.values()])
+            csvfile.write(','.join([str(v) for v in data_row.values()]) + '\n')
 
 # Main program
 if __name__ == '__main__':
     
-    with open(LOG_FILE, '+a') as logfile:
+    with open(LOG_FILE, 'w') as logfile:
         logfile.write(f'------------------------------------------------------------\n')
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: msfs-plane-list version {VERSION}\n')
         packages = get_packages_folders()
 
         if len(packages) == 0:
@@ -148,13 +152,18 @@ if __name__ == '__main__':
             sys.exit(1)
 
         for package in packages:
-            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Scanning {packages[0]} "{package[1]}" for aircrafts\n')
-            aircrafts = find_aircrafts(package[1])
+            aircrafts = find_aircrafts(package[1], logfile)
             aircrafts_data = read_aircrafts_data(aircrafts, logfile)
-            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Found {len(aircrafts_data)} aircrafts\n')
 
-            export_to_excel(package[0], aircrafts_data)
-            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.xlsx"\n')
+            try:
+                export_to_csv(package[0], aircrafts_data)
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.csv"\n')
+            except:
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Exception on writing to csv file\n')
 
-            export_to_csv(package[0], aircrafts_data)
-            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.csv"\n')
+            try:
+                export_to_excel(package[0], aircrafts_data)
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.xlsx"\n')
+            except:
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Exception on writing to excel file\n')
+
