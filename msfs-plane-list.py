@@ -4,9 +4,9 @@ import openpyxl as op
 import os
 import sys
 
-VERSION = "1.2.1"
+VERSION = "1.3"
 LOG_FILE = 'aircrafts.log'
-BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode']
+BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_']
 
 # Tries to determine the folders for the Steam and the Store version of MSFS.
 # For each match, the name of the installation and the location of the
@@ -34,8 +34,9 @@ def find_aircrafts(package_path: str, logfile):
     try:
         for path, _, files in os.walk(package_path):
             for name in files:
-                if name.endswith(flight_model_cfg_name):
+                if name.endswith(flight_model_cfg_name) and not aircraft_in_blacklist(path):
                     aircrafts.append((path, os.path.join(path, aircraft_cfg_name), os.path.join(path, flight_model_cfg_name)))
+                    logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Possible aircraft at "{path}"\n')
     except:
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error in find_aircrafts("{package_path}")\n')
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Folder "{path}"\n')
@@ -90,6 +91,7 @@ def aircraft_in_blacklist(aircraft):
 # Imports the data for a list of aircrafts. 
 # Returns a list of dictionaries containing the data
 def read_aircrafts_data(aircrafts, logfile):
+    logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Scanning aircrafts\n')
     aircrafts_data = []
     for aircraft in aircrafts:
         if aircraft_in_blacklist(aircraft):
@@ -103,13 +105,14 @@ def read_aircrafts_data(aircrafts, logfile):
                 logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Added {aircraft[0]}\n')
             else:
                 logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Skipping {aircraft[0]}\n')
+            data_row['path'] = aircraft[0]
         except KeyError as ke:
             logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error with key {ke} in {aircraft[0]}\n')
     print(f'Found {len(aircrafts_data)} aircrafts')
     logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Found {len(aircrafts_data)} aircrafts\n')
     return aircrafts_data
 
-HEADERS = ['Manufacturer', 'Type', 'Model', 'Ceiling [ft]', 'Range [nm]', 'Duration [h]', 'Cruise speed [kt]']
+HEADERS = ['Manufacturer', 'Type', 'Model', 'Ceiling [ft]', 'Range [nm]', 'Duration [h]', 'Cruise speed [kt]', 'Path']
 
 # Exports aircraft data to an excel file.
 def export_to_excel(package_name, aircrafts_data):
@@ -124,9 +127,9 @@ def export_to_excel(package_name, aircrafts_data):
 
     # Set auto-filter, fill style and freeze line
     filter = ws.auto_filter
-    filter.ref = 'A:G'
+    filter.ref = f'A:{chr(ord("A") + len(HEADERS) - 1)}'
     fill = op.styles.PatternFill(start_color='FFCEF8FF', end_color='FFCEF8FF', fill_type='solid')
-    for c in range(7):
+    for c in range(len(HEADERS)):
         ws.cell(row=1, column=c+1).fill = fill
     ws.freeze_panes = "A2"
 
