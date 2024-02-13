@@ -4,9 +4,9 @@ import openpyxl as op
 import os
 import sys
 
-VERSION = "1.3.2"
+VERSION = "1.3.3"
 LOG_FILE = 'aircrafts.log'
-BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_', 'corstens-hangar-gamod-models']
+BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_', 'corstens-hangar-gamod-models', 'fsltl-traffic-base']
 
 # Tries to determine the folders for the Steam and the Store version of MSFS.
 # For each match, the name of the installation and the location of the
@@ -58,8 +58,16 @@ def read_aircraft_cfg(file_name, logfile):
     except:
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading {file_name}\n')
     else:
-        data.update({key:aircraft_cfg[KEY_1][key].replace('"', '') for key in VALUES_1})
-        data.update({key:float(aircraft_cfg[KEY_2][key]) for key in VALUES_2})
+        for value in VALUES_1:
+            try:
+                data.update({value:aircraft_cfg[KEY_1][value].replace('"', '')})
+            except:
+                data.update({value:''})
+        for value in VALUES_2:
+            try:
+                data.update({value:float(aircraft_cfg[KEY_2][value])})
+            except:
+                data.update({value:-1})
     return data
     
 # Reads the content of a flight_model.cfg file.
@@ -75,7 +83,11 @@ def read_flight_model_cfg(file_name, logfile):
     except:
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading {file_name}\n')
     else:
-        data.update({key:float(flight_model_cfg[KEY_3][key]) for key in VALUES_3})
+        for value in VALUES_3:
+            try:
+                data.update({value:float(flight_model_cfg[KEY_3][value])})
+            except:
+                data.update({value:-1})
 
     return data
 
