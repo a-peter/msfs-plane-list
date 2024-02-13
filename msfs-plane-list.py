@@ -4,9 +4,9 @@ import openpyxl as op
 import os
 import sys
 
-VERSION = "1.3.1"
+VERSION = "1.3.2"
 LOG_FILE = 'aircrafts.log'
-BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_']
+BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_', 'corstens-hangar-gamod-models']
 
 # Tries to determine the folders for the Steam and the Store version of MSFS.
 # For each match, the name of the installation and the location of the
@@ -53,7 +53,7 @@ def read_aircraft_cfg(file_name, logfile):
 
     data = {}
     try:
-        aircraft_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'))
+        aircraft_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'), comment_prefixes=('#',';','/'))
         aircraft_cfg.read(file_name)
     except:
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading {file_name}\n')
