@@ -4,7 +4,7 @@ import openpyxl as op
 import os
 import sys
 
-VERSION = "1.3"
+VERSION = "1.3.1"
 LOG_FILE = 'aircrafts.log'
 BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_']
 
@@ -106,8 +106,10 @@ def read_aircrafts_data(aircrafts, logfile):
             else:
                 logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Skipping {aircraft[0]}\n')
             data_row['path'] = aircraft[0]
-        except KeyError as ke:
-            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error with key {ke} in {aircraft[0]}\n')
+        except (KeyError, ValueError, TypeError) as err:
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error with key {err} in {aircraft[0]}\n')
+        except:
+            logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Unknown Error in {aircraft[0]}\n')
     print(f'Found {len(aircrafts_data)} aircrafts')
     logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Found {len(aircrafts_data)} aircrafts\n')
     return aircrafts_data
