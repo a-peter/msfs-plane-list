@@ -26,7 +26,7 @@ def get_packages_folders():
 # Iterates over a packages folder and determines all aircrafts.
 # Returns the path for the aircraft.cfg and the flight_model.cfg files.
 def find_aircrafts(package_path: str, logfile):
-    logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Scanning {packages[0]} "{package[1]}" for aircrafts\n')
+    logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Scanning "{package_path}" for aircrafts\n')
     aircraft_cfg_name = 'aircraft.cfg'
     flight_model_cfg_name = 'flight_model.cfg'
 
