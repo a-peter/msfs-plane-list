@@ -1,4 +1,4 @@
 @echo off
 
-pyinstaller --onefile .\msfs-plane-list.py
+pyinstaller --onefile .\msfs_plane_list.py
 pause

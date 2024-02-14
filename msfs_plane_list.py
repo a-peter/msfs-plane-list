@@ -24,6 +24,8 @@ def get_packages_folders():
     print('Found package folder:', packages)
     return packages
 
+# Tests if a user blacklist exists.
+# If yes, the content is added to the blacklist.
 def import_blacklist(logfile):
     if os.path.isfile(BLACKLIST_FILE):
         user_blacklist = [line.strip() for line in open(BLACKLIST_FILE).readlines() if len(line.strip()) > 0]
@@ -181,6 +183,7 @@ if __name__ == '__main__':
     with open(LOG_FILE, 'w') as logfile:
         logfile.write(f'------------------------------------------------------------\n')
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: msfs-plane-list version {VERSION}\n')
+
         packages = get_packages_folders()
         import_blacklist(logfile)
 
@@ -203,4 +206,3 @@ if __name__ == '__main__':
                 logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Written to "aircrafts-{package[0]}.xlsx"\n')
             except:
                 logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Exception on writing to excel file\n')
-
