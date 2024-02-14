@@ -55,6 +55,8 @@ def read_aircraft_cfg(file_name, logfile):
     try:
         aircraft_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'))
         aircraft_cfg.read(file_name)
+    except configparser.ParsingError as err:
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: ParsingError {err} reading {file_name}\n')
     except:
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading {file_name}\n')
     else:
@@ -72,6 +74,8 @@ def read_flight_model_cfg(file_name, logfile):
     try:
         flight_model_cfg = configparser.ConfigParser(strict=False, inline_comment_prefixes=(';'), comment_prefixes=('#',';','/'))
         flight_model_cfg.read(file_name)
+    except configparser.ParsingError as err:
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: ParsingError {err} reading {file_name}\n')
     except:
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading {file_name}\n')
     else:

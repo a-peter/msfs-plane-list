@@ -1,6 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.containers import ScrollableContainer
-from textual.widgets import Header, Footer, Log, Button
+from textual.message import Message
+from textual.widgets import Header, Footer, Log, Button, LoadingIndicator
 from textual import events
 from datetime import datetime
 
@@ -11,11 +12,13 @@ class MSFS_Aircraft_Scanner(App):
   export a list to Excel and/or CSV"""
 
   BINDINGS = [
-    ('d', 'toggle_dark()', 'Toggle dark mode'),
+    # ('d', 'toggle_dark()', 'Toggle dark mode'),
     # ('a', 'add_text()', 'Add text'),
+    ('r', 'add_text', 'Run search'),
     ('q', 'quit()', 'End the program')
   ]
   LOG = Log('abc')
+  loading_indicator = None
 
   def compose(self) -> ComposeResult:
     yield Header()
@@ -23,12 +26,13 @@ class MSFS_Aircraft_Scanner(App):
     yield ScrollableContainer(Button("Start", id="start", variant="success"), self.LOG)
 
   def on_button_pressed(self, event: Button.Pressed) -> None:
-     self.action_add_text()
+     if event.button.id == 'start':
+      self.action_add_text()
 
   def action_toggle_dark(self) -> None:
     self.dark = not self.dark
   
-  def action_add_text(self) -> None:
+  async def action_add_text(self) -> None:
     with open(pl.LOG_FILE, 'w') as logfile:
       packages = pl.get_packages_folders()
       if len(packages) == 0:
@@ -36,7 +40,7 @@ class MSFS_Aircraft_Scanner(App):
       else:
         for package in packages:
           self.LOG.write_line(f'{package[0]}: {package[1]}')
-          aircrafts = pl.find_aircrafts(package[1], logfile)
+          aircrafts = await pl.find_aircrafts(package[1], logfile)
           aircrafts_data = pl.read_aircrafts_data(aircrafts, logfile)
           self.LOG.write_line(f'Found {len(aircrafts_data)} aircrafts')
 
@@ -54,6 +58,10 @@ class MSFS_Aircraft_Scanner(App):
           except:
               logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Exception on writing to excel file\n')
 
+  class AircraftsFound(Message):
+    def __init__(self, aircrafts) -> None:
+       self.aircrafts = aircrafts
+       
 if __name__ == '__main__':
   app = MSFS_Aircraft_Scanner()
   app.run()
