@@ -7,6 +7,7 @@ import sys
 VERSION = "1.3.4"
 LOG_FILE = 'aircrafts.log'
 BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_', 'corstens-hangar-gamod-models', 'fsltl-traffic-base']
+BLACKLIST_FILE = 'blacklist.txt'
 
 # Tries to determine the folders for the Steam and the Store version of MSFS.
 # For each match, the name of the installation and the location of the
@@ -22,6 +23,16 @@ def get_packages_folders():
                     packages.append((source[0], line.split('"')[1]))
     print('Found package folder:', packages)
     return packages
+
+def import_blacklist(logfile):
+    if os.path.isfile(BLACKLIST_FILE):
+        user_blacklist = [line.strip() for line in open(BLACKLIST_FILE).readlines() if len(line.strip()) > 0]
+        BLACKLIST.extend(user_blacklist)
+        print(f'Imported user blacklist {BLACKLIST_FILE} with {len(user_blacklist)} entries')
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Imported blacklist from {BLACKLIST_FILE}: {user_blacklist}\n')
+    else:
+        print(f'No user blacklist {BLACKLIST_FILE}')
+        logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: No user blacklist {BLACKLIST_FILE} found\n')
 
 # Iterates over a packages folder and determines all aircrafts.
 # Returns the path for the aircraft.cfg and the flight_model.cfg files.
@@ -41,6 +52,7 @@ def find_aircrafts(package_path: str, logfile):
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error in find_aircrafts("{package_path}")\n')
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Folder "{path}"\n')
 
+    print(f'Found {len(aircrafts)} possible aircrafts')
     return aircrafts
 
 # Reads the content of an aircraft.cfg file.
@@ -170,6 +182,7 @@ if __name__ == '__main__':
         logfile.write(f'------------------------------------------------------------\n')
         logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: msfs-plane-list version {VERSION}\n')
         packages = get_packages_folders()
+        import_blacklist(logfile)
 
         if len(packages) == 0:
             logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Could not find any package folders\n')
