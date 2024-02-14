@@ -4,7 +4,7 @@ import openpyxl as op
 import os
 import sys
 
-VERSION = "1.3.3"
+VERSION = "1.3.4"
 LOG_FILE = 'aircrafts.log'
 BLACKLIST = ['Asobo_C172sp_AS1000_TowPlane', 'fs-devmode', 'Asobo_Generic_', 'corstens-hangar-gamod-models', 'fsltl-traffic-base']
 
@@ -62,11 +62,13 @@ def read_aircraft_cfg(file_name, logfile):
             try:
                 data.update({value:aircraft_cfg[KEY_1][value].replace('"', '')})
             except:
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading [{KEY_1}].{value} from {file_name}.\n')
                 data.update({value:''})
         for value in VALUES_2:
             try:
                 data.update({value:float(aircraft_cfg[KEY_2][value])})
             except:
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading [{KEY_2}].{value} from {file_name}.\n')
                 data.update({value:-1})
     return data
     
@@ -87,6 +89,7 @@ def read_flight_model_cfg(file_name, logfile):
             try:
                 data.update({value:float(flight_model_cfg[KEY_3][value])})
             except:
+                logfile.write(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Error reading [{KEY_3}].{value} from {file_name}.\n')
                 data.update({value:-1})
 
     return data
